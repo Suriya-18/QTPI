@@ -1,0 +1,14 @@
+(* given a random qubit (a|0>+b|1>), this may terminate with
+   either a|0>+b|1> or a|0>-b|1>. Interesting, eh? Only 
+   'really' works if the initial qubit is |0> or |+> 
+   -- i.e. an unfair coin.
+ *)
+
+proc P(fromQ:^qubit, toQ:^qubit) = fromQ?(y) . y>>(if randbool () then X else I) . toQ!y . 
+                     
+proc Q(x: qubit, toP:^qubit, fromP:^qubit) = 
+  x>>H . toP!x . fromP?(z) . z>>H .  
+
+proc System() = (newq x) 
+                (new s:^qubit, r:^qubit) 
+                | P(s, r) | Q(x,s,r)

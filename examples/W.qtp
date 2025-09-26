@@ -1,0 +1,49 @@
+(* W-state algorithm taken from 
+    the Q# Kata on superposition
+    (https://github.com/microsoft/QuantumKatas/tree/main/Superposition/ReferenceImplementation.qs), 
+    task 16, WState_PowerOfTwo_Reference
+ *)
+
+fun ixs k = tabulate k (λ i. i)
+
+fun powerceiling b n =
+  pwc 1
+  where pwc c = if c>=n then c else pwc (b*c)
+
+proc W (c,n) = 
+  if   n<=0 then (let _ = abandon ["W "; show n; " is impossible"]) . 
+  elsf n=1  then (newqs qs = |1>) c!qs . 
+  else . (let k = floor (n/2)) 
+       . (new c1) 
+       | W (c1,k)     
+       | . c1?(q0s)      
+         . out!["W "; show n; " has "; show k; "\n"]
+         . (newqs q1s = |0>⊗⊗(n-k))   
+         . (newq anc = |+>)        
+         . 𝄆 i←ixs k: anc,q0s↓i,q1s↓i>>F . out!["."] . 
+         . out!["W "; show n; " has done its Fs\n"]
+         . 𝄆 i←ixs k: q1s↓i,anc>>CNot . out!["."] .  
+         . out!["W "; show n; " has done its CNots\n"]
+         . dispose!anc
+         . (joinqs q0s, q1s → qs)
+         . c!qs
+         . 
+
+proc Wmake (c,n) =
+  (let k = powerceiling 2 n)
+  | W (c,k)
+  | . c?(qs)
+    . out!["W "; show k; " = "] . outq!showq qs . out!["\n"]
+    . if k=n then 
+      else 
+        . out!["discarding "; show (k-n); " qubits "]
+        . (splitqs qs → q0s(k-n),qs)
+        . q0s⌢⃫(bs)
+        . out!["which measured "; show bs; ", leaving "] . outq!showq qs 
+        . if forall (λ b . b=0b0) bs then out!["\n"] .  else out![" -- round again!\n"] . Wmake (c,n)  
+               
+
+proc System () =
+  . (new c)
+  . (let n = read_num "how many qubits") 
+  . Wmake (c,n)

@@ -1,0 +1,15 @@
+fun tp (a:gate) (b:gate) =
+  [show a; "⊗"; show b; "="; show (a⊗b); "\n"]
+  
+proc System () =
+  out!tp I Cnot .
+  out!tp I Cnot .
+  out!tp Cnot I .
+  out!tp Cnot X .
+  out!tp X Cnot .
+  out!tp (Rx (45/2)) (Rx (45/2))  .
+  out!tp (Ry (45/2)) (Ry (45/2))  .
+  out![show (Ry (45/2)*Ry (45/2)); "; "; show (Ry (45/2)*Ry (45/2)*Ry (45/2)); "\n"] .
+  out!tp (Rz (45/2)) (Rz (45/2))  .
+  out!tp H (I⊗I) .
+  

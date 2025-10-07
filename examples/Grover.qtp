@@ -1,0 +1,37 @@
+fun compose (f : 'b -> 'a) (g : 'c -> 'b) (v : 'c) : 'a = f (g v)
+
+fun semicolon (g : 'c -> 'b) (f : 'b -> 'a) : ('c -> 'a) = compose f g
+
+fun read_min_int m s
+  = k where k = if j>=m then j 
+                else semicolon (λ _ . print_strings ["pardon? at least "; show m; "\n"])
+                               (λ _ . read_min_int m s)
+                               ()
+      where j = read_num s
+
+fun groverG n = engate ((sx_1+sx_1)*((|+>⊗⊗n)*(<+|⊗⊗n))-(degate I⊗⊗n))
+
+   groverU bs = engate (tabulate_diag_m (2**n) tf
+                            where n = length bs
+                            where tf i = if i=address then -sx_1 else sx_1
+                            where address = bits2num (rev bs) (* big-endian *)  
+                       )
+proc 
+  System () =
+    . (let n = read_min_int 2 "number of bits")
+    . (newqs qs = |+>⊗⊗n)  
+
+    . (let G = groverG n)
+    . (let bs = randbits n)
+    . (let U = groverU bs)
+    . (let iters = floor (𝝅*sqrt(2**n)/4+0.5))
+    . out!["grover "; show n; " bs = "; show bs; "; "; show iters; " iterations"; "\n"]
+    
+    . 𝄆 i←tabulate iters (λ i. i): qs>>>U . qs>>>G . 
+    
+    . out!["finally "] . outq!showq qs . out!["\n"]
+    
+    . qs⌢⃫(bs') 
+    . out!["measurement says "; show bs'; 
+           if bs=bs' then " ok" else " ** WRONG **"; "\n"] 
+    . 

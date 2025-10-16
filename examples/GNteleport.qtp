@@ -1,0 +1,43 @@
+
+proc 
+  Alice (x:qubit, c:^(bit,bit), z:qubit, log) = 
+    out!["initially Alice's z is "] . outq!(showq z) . out!["\n"] .
+    z,x>>CNot . z>>H . z-/-(vz) . x-/-(vx) . c!vz,vx . 
+    log!() .  
+
+  Bob(y:qubit, c:^(bit,bit), log) = 
+    c?(b1,b2) . y>>phi (match (b1,b2) .
+                         + (0b0,0b0) . 0
+                         + (0b0,0b1) . 1
+                         + (0b1,0b0) . 2 (* i.e. Y *) (* this doesn't work *)
+                         + (0b1,0b1) . 3 (* i.e. Z *) (* this doesn't work *)
+                        ) . 
+    out!["finally Bob's y is "] . outq!(showq y) . out!["\n"] .
+    dispose!y .
+    log!() .  
+
+  System () = 
+    out!["This is teleportation using the Phi collection I, X, Y, Z. It doesn't work\n"] .
+    (let k = read_num "number of trials")
+    (let standard = read_bool "standard initial state or random" "s" "r")
+    out!if standard then []
+                    else ["\nThat, as you will see, can provoke some interesting results from the symbolic quantum calculator\n\n"] .
+    out!["See output for results -- can print but can't examine qubit state\n"] .
+    Run (k, standard, 0)
+
+  Run (k, standard, i) =
+    if i=k then out![show k; " trials\n"] . 
+    else (new log)
+         | if standard then (newq x=|0>, y=|0>) Experiment (x, y, log)
+                       else (newq x,y)          Experiment (x, y, log)
+         | log?(_) .
+           Run (k, standard, i+1)
+  
+  Experiment (x:qubit, y:qubit, log) =
+    x>>H . x,y>>CNot . 
+    (new c:^(bit,bit))
+    (newq z)
+    (new logA, logB)
+    | Alice(x,c,z,logA) 
+    | Bob(y,c,logB)
+    | logA?(_) . logB?(_) . log!() . 

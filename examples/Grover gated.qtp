@@ -1,0 +1,68 @@
+fun compose (f : 'b -> 'a) (g : 'c -> 'b) (v : 'c) : 'a = f (g v)
+
+fun semicolon (g : 'c -> 'b) (f : 'b -> 'a) : ('c -> 'a) = compose f g
+
+fun read_min_int m s
+  = k where k = if j>=m then j 
+                else semicolon (λ _ . print_strings ["pardon? at least "; show m; "\n"])
+                               (λ _ . read_min_int m s)
+                               ()
+      where j = read_num s
+
+proc 
+  System () =
+    . (let n = read_min_int 2 "number of bits")
+    
+    . (let bs = randbits n) (* should this be rev'd, for big-endian? *)
+    . (let iters = floor (pi*sqrt(2**n)/4+0.5))
+    . out!["grover "; show n; " bs = "; show bs; "; "; show iters; " iterations"; "\n"]
+    
+    . (let Hn = H⊗⊗n) (let Xn = X⊗⊗n)
+    (* main iteration *)
+    . (newq aux = |->)
+    . (newqs qs = |+>⊗⊗n)  
+    . (newqs ancs = |0>⊗⊗(n-1)) 
+    . (let ns = tabulate n (λ i. i))
+    . 𝄆 i←tabulate iters (λ i. i):
+        . (* oracle *) ⁁1
+              . (* invert the zero address bits *)
+              . 𝄆 (j,k)←zip bs ns: . qs↓k >> (if j=0b0 then X else I) .  
+              . (* MCT(U) should be a subprocess, but I'm not allowed subprocesses *)
+              . qs↓0,qs↓1,ancs↓0>>T
+              . 𝄆 k←tabulate (n-2) (λ i. i): qs↓(k+2),ancs↓k,ancs↓(k+1)>>T . 
+              . ancs↓(n-2),aux>>CNot
+              . 𝄆 k←rev (tabulate (n-2) (λ i. i)): qs↓(k+2),ancs↓k,ancs↓(k+1)>>T . 
+              . qs↓0,qs↓1,ancs↓0>>T
+              . (* de-invert the address bits *)
+              . 𝄆 (j,k)←zip bs ns: . qs↓k >> (if j=0b0 then X else I) . 
+        . (* diffuser *) ⁁10
+              . qs>>>Hn ⁁11
+              . qs>>>Xn ⁁12
+              . (* MCZ *)
+              . qs↓0,qs↓1,ancs↓0>>T
+              . 𝄆 k←tabulate (n-2) (λ i. i): qs↓(k+2),ancs↓k,ancs↓(k+1)>>T . 
+              . ancs↓(n-2),aux>>CX
+              . 𝄆 k←rev (tabulate (n-2) (λ i. i)): qs↓(k+2),ancs↓k,ancs↓(k+1)>>T . 
+              . qs↓0,qs↓1,ancs↓0>>T ⁁20
+              . qs>>>Xn ⁁21
+              . qs>>>Hn ⁁22
+        .  𝄇
+
+    . out!["finally "] . outq!showq qs . out!["\n"]
+    
+    . qs⌢⃫(bs') 
+    . out!["measurement says "; show bs'; 
+           if bs=bs' then " ok" else " ** WRONG **"; "\n"] 
+    . 
+
+            with 1: out!["iterated oracle\n"] . out!["before oracle "; show i; " "] . outq!showq qs . out!["\n"] . 
+                 10: out!["iterated diffuser\n"] . out!["before diffuser "; show i; " "] . outq!showq qs . out!["\n"] . 
+                 11: out!["after diffuser "; show i; "'s  H⊗⊗n "] . outq!showq qs . out!["\n"] . 
+                 12: out!["after diffuser "; show i; "'s  X⊗⊗n "] . outq!showq qs . out!["\n"] . 
+                 20: out!["after diffuser "; show i; "'s  MCX "] . outq!showq qs . out!["\n"] . 
+                 21: out!["after diffuser "; show i; "'s  second X⊗⊗n "] . outq!showq qs . out!["\n"] . 
+                 22: out!["after diffuser "; show i; "'s  second H⊗⊗n "] . outq!showq qs . out!["\n"] . 
+(* multiple controlled Toffoli ... *)
+(* proc MCU () 
+
+*)

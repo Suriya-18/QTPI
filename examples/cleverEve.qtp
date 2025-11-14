@@ -1,0 +1,55 @@
+(* a sophisticated eavesdropper. Plays Bob to Alice, Alice to Bob *)
+
+proc Eve (N, c, w, hksAE, hksEB, qA, qB, bsA, bsB, logAE,logEB) =
+    (new measured) 
+    | . CopyQBits(N,[],qA,qB,measured)
+    | . measured?(bvs)                       
+      . (let (bs,vs) = unzip bvs)           (* bs, vs are what I think I saw *) 
+      . ⁁1
+      . bsA?(h,basesA)                      (* receive Alice's bases *)
+      . bsA!tagged hksAE 1 w bs             (* send my bases (as if Bob) to Alice *)
+      . bsB!tagged hksEB 0 w bs             (* and (as if Alice) to Bob *)   
+      . bsB?(_,basesB)                      (* receive his in return *)
+      . (let rvsB = reconcile basesB bs vs)
+      . bsB?(_,maskB) . bsB?(_,checkbitsB)  (* receive Bob's mask and check bits *)
+      . ⁁2
+
+      (* like Bob, make a checkbit mask for Alice *)
+      . (let rvsA = reconcile bs basesA vs)
+      . (let maskA = tabulate (length rvsA) (cb_choose (c/length rvsA)))
+      . (let codebitsA = mask_filter 0b0 maskA rvsA)
+      . (let codebitsB = mask_filter 0b0 maskB rvsB)
+      (* if Alice has more code bits than Bob then she might send me a message
+         that I can't recrypt. I have to deal with that.
+       *)
+      . bsA!tagged hksAE 2 w maskA          (* send Alice the mask and checkbits *)
+      . (let cbsA = mask_filter 0b1 maskA rvsA)
+      . bsA!tagged hksAE 3 w cbsA   
+      . bsA?(_,encrypted)                   (* receive her coded message *)
+      . (let hkbsAE', codebitsA = split_codebits encrypted w codebitsA)
+                                            (* split the codebits as Bob would *)
+      . (let codeA = take (length encrypted) codebitsA)
+      . (let messageA = xor_mask codeA encrypted)
+                                            (* decode as Bob would *)
+
+      (* encode for Bob as Alice would and send it to him. Truncate if necessary, as Alice would *)
+      . (let hkbsEB', codebitsB = split_codebits encrypted w codebitsB)
+                                            (* split the codebits as Alice would *)
+      . (let codeB = take (length encrypted) codebitsB)
+      . (let messageB = xor_mask codeB (take (length codeB) messageA))
+      . bsB!tagged hksEB 4 w messageB      
+      . ⁁3
+       . 
+
+          with
+            1: . logEB!bs. logEB!vs
+               . 
+            2: . logEB!checkbitsB
+               . 
+            3: . logAE!encrypted           
+               . logAE!codeA
+               . logEB![bool2bit true]              (* can decrypt, sort of *)
+               . logEB!messageA                     (* best guess *)
+               . logAE!hkbsAE'                           
+               . logEB!hkbsEB'                          
+               .             

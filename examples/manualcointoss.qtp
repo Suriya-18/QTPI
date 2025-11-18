@@ -14,4 +14,4 @@ proc System() = . (new ch:^qubit)
                   .
 
      Q(ch) = ch?(t) . t>>H . ch!t . ch?(u) . u>>H . ch!u .  
- Q(ch) = ch?(t) . t>>H . ch!t . ch?(u) . u>>H . ch!u . 
+

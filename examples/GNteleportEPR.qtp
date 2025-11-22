@@ -1,0 +1,26 @@
+
+proc Alice (x:qubit, c:^(bit,bit), z:qubit) = 
+    out!["initially Alice's z is "] . outq!(showq z) . out!["; "] .
+    z,x>>CNot . z>>H . z-/-(vz) . x-/-(vx) . c!vz,vx .  
+
+proc Bob(y:qubit, c:^(bit,bit)) = 
+    c?(b1,b2) . y>>phi (match (b1,b2) .
+                         + (0b0,0b0) . 0
+                         + (0b0,0b1) . 1
+                         + (0b1,0b0) . 2 (* i.e. Y *)
+                         + (0b1,0b1) . 3 (* i.e. Z *) (* this doesn't work *)
+                        ) . 
+    out!["finally Bob's y is "] .  outq!(showq y) . out!["\n"] .
+    
+  
+proc Alice'(s:^qubit,c:^(bit,bit),z:qubit) = s?(x:qubit) . Alice(x,c,z)
+
+proc Bob'(t:^qubit,c:^(bit,bit)) = t?(y:qubit) . Bob(y,c)
+
+proc Source(s:^qubit,t:^qubit) = (newq x=|0>,y=|0>) x>>H . x,y>>CNot . s!x . t!y .  
+
+proc System() = 
+    out!["This is teleportation using the Phi collection I, X, Y, Z. It doesn't work\n"] .
+    (newq z)(new c:^(bit,bit),s:^qubit,t:^qubit) | Alice'(s,c,z) 
+                                             | Bob'(t,c) 
+                                             | Source(s,t)

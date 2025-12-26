@@ -1,0 +1,9 @@
+proc Eve (nq,qcin,qcout) =
+  if nq<>0 then
+    qcin?(q) .
+    (newq q'=|1>) q,q' >> Cnot .
+    qcout!q  .
+    dispose!q' .  (* plug a space leak: without this we generate an orphan qubit each time round the loop *)
+    Eve (nq-1,qcin,qcout)
+  else
+    
